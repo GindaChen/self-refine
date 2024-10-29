@@ -92,7 +92,7 @@ def test():
 if __name__ == "__main__":
     import sys
 
-    if sys.argv[1] == "test":
+    if len(sys.argv) == 2 and sys.argv[1] == "test":
         test()
     else:
         import argparse

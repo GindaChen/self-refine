@@ -25,7 +25,7 @@ class Prompt:
 
 def retry_parse_fail_prone_cmd(
     func,
-    max_retries: int = 3,
+    max_retries: int = 5,
     exceptions=(
         ValueError,
         KeyError,
