@@ -70,7 +70,12 @@ _Warning: Acronym Generation under Llama-3 8B does not always follow the prompt.
 
 
 ```sh
+# Test
 python -u src/acronym/run.py "Using language models of code for few-shot commonsense"
+
+# Run benchmark
+# python <script> <data-file> <n_attempts> <output-file>
+python  src/acronym/run.py data/tasks/acronyms/acronyms.tsv 5 ./data/outputs/acronyms/length_norm_entropy_16.csv
 ```
 
 * Since we sample with temperature 0.7, you'll get different results each time you run the above command.
