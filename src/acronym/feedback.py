@@ -68,12 +68,14 @@ Here are some examples of this scoring rubric:
                 max_tokens=self.max_tokens,
                 stop_token="###",
                 temperature=0.7,
+                logprobs=True,
             )
+            logprobs = output.choices[0].logprobs.token_logprobs
             
             generated_feedback = openai_api.OpenaiAPIWrapper.get_first_response(output)
             generated_feedback = generated_feedback.split("Scores:")[1].strip()
             generated_feedback = generated_feedback.split("#")[0].strip()
-            return generated_feedback
+            return generated_feedback, logprobs
         
         generated_feedback = try_call_gen_feedback(title)
         return generated_feedback

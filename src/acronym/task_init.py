@@ -40,14 +40,13 @@ Acronym: {answer}"""
             max_tokens=300,
             stop_token="###",
             temperature=0.7,
+            logprobs=True,
         )
+        logprobs = output.choices[0].logprobs.token_logprobs
 
         generated_acronym = openai_api.OpenaiAPIWrapper.get_first_response(output)
-        # print("output:")
-        # print(generated_acronym)
-        # sys.exit()
         generated_acronym = generated_acronym.split(self.answer_prefix)[1].replace("#", "").strip()
-        return generated_acronym.strip()
+        return generated_acronym.strip(), logprobs
 
 
 def test():
