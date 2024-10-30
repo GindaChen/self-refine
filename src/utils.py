@@ -30,6 +30,8 @@ def retry_parse_fail_prone_cmd(
         ValueError,
         KeyError,
         IndexError,
+        NameError,
+        AttributeError,
     ),
 ):
     def wrapper(*args, **kwargs):
@@ -41,10 +43,10 @@ def retry_parse_fail_prone_cmd(
                 stack_trace = traceback.format_exc()
 
                 retries -= 1
-                # print(f"An error occurred: {e}. {stack_trace}. Left retries: {retries}.")
-                # print(f"... Left retries: {retries} ... {func.__name__} {args} {kwargs}")
-        else:
-            print(f"An error occurred: {e}. {stack_trace}. Running out of retries. Returning None as default value")
+                if retries == 0:
+                    print(f"An error occurred: {e}. {stack_trace}. Left retries: {retries}.")
+                    # print(f"... Left retries: {retries} ... {func.__name__} {args} {kwargs}")
+            pass
         return None
 
     return wrapper

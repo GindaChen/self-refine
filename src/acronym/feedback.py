@@ -77,8 +77,8 @@ Here are some examples of this scoring rubric:
             generated_feedback = generated_feedback.split("#")[0].strip()
             return generated_feedback, logprobs
         
-        generated_feedback = try_call_gen_feedback(title)
-        return generated_feedback
+        generated_feedback, logprobs = try_call_gen_feedback(title)
+        return generated_feedback, logprobs
 
     def get_prompt_with_question(self, title: str, acronym: str):
         question = self.make_query(title=title, acronym=acronym)

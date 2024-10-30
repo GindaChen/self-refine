@@ -111,6 +111,7 @@ Okay, let's use this feedback to improve the acronym.
                 max_tokens=300,
                 stop_token=self.inter_example_sep,
                 temperature=0.7,
+                logprobs=True,
             )
             logprobs = output.choices[0].logprobs.token_logprobs
             response = openai_api.OpenaiAPIWrapper.get_first_response(output)
@@ -118,9 +119,9 @@ Okay, let's use this feedback to improve the acronym.
             new_title = response.split("Title:")[1].strip().split("\n")[0].strip()
             return new_title, acronym, logprobs
         
-        new_title, acronym = try_call(acronyms_to_scores)
+        new_title, acronym, logprobs = try_call(acronyms_to_scores)
         
-        return new_title, acronym.strip()
+        return new_title, acronym.strip(), logprobs
 
     def make_input(
         self,

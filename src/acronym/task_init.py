@@ -34,18 +34,25 @@ Acronym: {answer}"""
     def __call__(self, title: str) -> str:
         generation_query = self.make_query(title)
 
-        output = openai_api.OpenaiAPIWrapper.call(
-            prompt=generation_query,
-            engine=self.engine,
-            max_tokens=300,
-            stop_token="###",
-            temperature=0.7,
-            logprobs=True,
-        )
-        logprobs = output.choices[0].logprobs.token_logprobs
+        from src.utils import retry_parse_fail_prone_cmd
+        
+        @retry_parse_fail_prone_cmd
+        def try_call_init(title):
+            output = openai_api.OpenaiAPIWrapper.call(
+                prompt=generation_query,
+                engine=self.engine,
+                max_tokens=300,
+                stop_token="###",
+                temperature=0.7,
+                logprobs=True,
+            )
+            logprobs = output.choices[0].logprobs.token_logprobs
 
-        generated_acronym = openai_api.OpenaiAPIWrapper.get_first_response(output)
-        generated_acronym = generated_acronym.split(self.answer_prefix)[1].replace("#", "").strip()
+            generated_acronym = openai_api.OpenaiAPIWrapper.get_first_response(output)
+            generated_acronym = generated_acronym.split(self.answer_prefix)[1].replace("#", "").strip()
+            return generated_acronym, logprobs
+        
+        generated_acronym, logprobs = try_call_init(title)
         return generated_acronym.strip(), logprobs
 
 
