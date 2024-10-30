@@ -1,7 +1,11 @@
 # Self-Refine: Iterative Refinement with Self-Feedback
 
-_With Self-Refine, LLMs can generate feedback on their work, use it to improve the output, and repeat this process._
+## Important Updates
+- Need to use [GindaChen/prompt-lib](https://github.com/gindachen/prompt-lib) to support local model. I have changed instructions to reflect this.
+- In `prompt-lib/prompt_lib/backends/openai_api.py`, I slightly change the completion wrapper (`OpenaiAPIWrapper.call` - line 313) to ensure completion endpoint is called for acrynom, otherwise it will never return structured output. 
 
+<!--- _With Self-Refine, LLMs can generate feedback on their work, use it to improve the output, and repeat this process._
+--->
 
 <center><h4> <a href="https://selfrefine.info"> Website </a> | <a href="https://arxiv.org/pdf/2303.17651.pdf">Paper</a> </h4></center>
 <hr>
@@ -47,10 +51,12 @@ By default, we want to use Llama-3 8B to run the experiments. You can set the en
 ```bash
 export OPENAI_BASE_URL="http://localhost:30000/v1/"
 ```
+or find this variable inside `prompt-lib/prompt_lib/backends/openllm.py` and change the value.
+
 
 For example, running this in vllm / sglang:
 ```bash
-# vLLM
+# vLLM: remember to set the `--served-model-name default`
 vllm serve "meta-llama/Meta-Llama-3-8B-Instruct" --tensor-parallel-size 4 --served-model-name default
 
 # SGLang
