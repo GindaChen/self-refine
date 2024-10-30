@@ -2,13 +2,9 @@
 
 _With Self-Refine, LLMs can generate feedback on their work, use it to improve the output, and repeat this process._
 
-![image](https://raw.githubusercontent.com/madaan/self-refine/main/docs/static/images/animation_oldstyle_oneloop.gif)
-
 
 <center><h4> <a href="https://selfrefine.info"> Website </a> | <a href="https://arxiv.org/pdf/2303.17651.pdf">Paper</a> </h4></center>
 <hr>
-
-
 
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
@@ -31,27 +27,12 @@ _With Self-Refine, LLMs can generate feedback on their work, use it to improve t
 
 <hr>
 
-## Updates
-
-- **Nov 2023**: Added [visual self-refine examples](docs/visual_self_refine_examples/) and [colabs](colabs/Visual-Self-Refine-GPT4V.ipynb). Use GPT4-V to write tikz code for diagrams, and improve them iteratively.
-
-<p align="center">
-  <strong>Stokes' Theorem Example</strong><br>
-  <img src="docs/visual_self_refine_examples/stokes__theorem.gif" alt="Visual Self-Refine Example 1" width="300" height="300" />
-</p>
-<p align="center">
-  <strong>Unicorn Example</strong><br>
-  <img src="docs/visual_self_refine_examples/unicorn.gif" alt="Visual Self-Refine Example 2" width="300" height="300" />
-</p>
-
-
-
 ## Setup
 
-* We use [prompt-lib](https://github.com/reasoning-machines/prompt-lib) for querying LLMs. You can install `prompt-lib` by running the following commands:
+* We use [prompt-lib](https://github.com/gindachen/prompt-lib) for querying LLMs. You can install `prompt-lib` by running the following commands:
 
 ```sh
-git clone https://github.com/reasoning-machines/prompt-lib
+git clone https://github.com/gindachen/prompt-lib -b support-local-model
 pip install prompt-lib/
 ```
 
@@ -61,7 +42,25 @@ Depending on your default settings, you may want to use the following to set a P
 export PYTHONPATH=".:../:.:src:../:../../:.:prompt-lib"
 ```
 
+
+By default, we want to use Llama-3 8B to run the experiments. You can set the environment variable `OPENAI_BASE_URL` to point to your local Llama-3 8B server.
+```bash
+export OPENAI_BASE_URL="http://localhost:30000/v1/"
+```
+
+For example, running this in vllm / sglang:
+```bash
+# vLLM
+vllm serve "meta-llama/Meta-Llama-3-8B-Instruct" --tensor-parallel-size 4 --served-model-name default
+
+# SGLang
+python -m sglang.launch_server --model-path meta-llama/Meta-Llama-3-8B-Instruct --port 30000 --tensor-parallel-size 4 --data-parallel-size 2
+```
+
+
 ## Getting Started with Acronym Generation
+
+_Warning: Acronym Generation under Llama-3 8B does not always follow the prompt. This can be solved using structured output, but more importantly I think the code can be written without instruction tunning._
 
 
 ```sh
@@ -260,3 +259,22 @@ flowchart LR
     Refiner --> |R: y_t, x, fb| Refined_Output{Refined Output}
     Refined_Output --> |Stopping Criteria Not Met| Unrefined
 ```
+
+
+
+## Updates
+
+- **Nov 2023**: Added [visual self-refine examples](docs/visual_self_refine_examples/) and [colabs](colabs/Visual-Self-Refine-GPT4V.ipynb). Use GPT4-V to write tikz code for diagrams, and improve them iteratively.
+
+<p align="center">
+  <strong>Stokes' Theorem Example</strong><br>
+  <img src="docs/visual_self_refine_examples/stokes__theorem.gif" alt="Visual Self-Refine Example 1" width="300" height="300" />
+</p>
+<p align="center">
+  <strong>Unicorn Example</strong><br>
+  <img src="docs/visual_self_refine_examples/unicorn.gif" alt="Visual Self-Refine Example 2" width="300" height="300" />
+</p>
+
+
+
+![image](https://raw.githubusercontent.com/madaan/self-refine/main/docs/static/images/animation_oldstyle_oneloop.gif)

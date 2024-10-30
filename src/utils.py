@@ -25,7 +25,7 @@ class Prompt:
 
 def retry_parse_fail_prone_cmd(
     func,
-    max_retries: int = 5,
+    max_retries: int = 16,
     exceptions=(
         ValueError,
         KeyError,
@@ -41,7 +41,10 @@ def retry_parse_fail_prone_cmd(
                 stack_trace = traceback.format_exc()
 
                 retries -= 1
-                print(f"An error occurred: {e}. {stack_trace}. Left retries: {retries}.")
+                # print(f"An error occurred: {e}. {stack_trace}. Left retries: {retries}.")
+                # print(f"... Left retries: {retries} ... {func.__name__} {args} {kwargs}")
+        else:
+            print(f"An error occurred: {e}. {stack_trace}. Running out of retries. Returning None as default value")
         return None
 
     return wrapper

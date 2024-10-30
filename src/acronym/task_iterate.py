@@ -94,6 +94,7 @@ Okay, let's use this feedback to improve the acronym.
         self,
         acronyms_to_scores: Dict[str, str],
     ) -> str:
+        from src.utils import retry_parse_fail_prone_cmd
         example_input = self.make_input(
             acronyms_to_scores=acronyms_to_scores,
         )
@@ -102,21 +103,21 @@ Okay, let's use this feedback to improve the acronym.
         with open(f"acronym_iterate_{self.count}.txt", "w") as f:
             f.write(transfer_query + "\n")
 
-        output = openai_api.OpenaiAPIWrapper.call(
-            prompt=transfer_query,
-            engine=self.engine,
-            max_tokens=300,
-            stop_token=self.inter_example_sep,
-            temperature=0.7,
-        )
-        response = openai_api.OpenaiAPIWrapper.get_first_response(output)
-
+        @retry_parse_fail_prone_cmd
+        def try_call(title):
+            output = openai_api.OpenaiAPIWrapper.call(
+                prompt=transfer_query,
+                engine=self.engine,
+                max_tokens=300,
+                stop_token=self.inter_example_sep,
+                temperature=0.7,
+            )
+            response = openai_api.OpenaiAPIWrapper.get_first_response(output)
+            acronym = response.split("Acronym:")[1].strip().split("\n")[0].strip()
+            new_title = response.split("Title:")[1].strip().split("\n")[0].strip()
+            return new_title, acronym
         
-        acronym = response.split("Acronym:")[1].strip().split("\n")[0].strip()
-        
-        new_title = response.split("Title:")[1].strip().split("\n")[0].strip()
-        
-        
+        new_title, acronym = try_call(acronyms_to_scores)
         
         return new_title, acronym.strip()
 
