@@ -42,6 +42,8 @@ def iterative_gsm(question: str, max_attempts: int, feedback_type: str, temperat
         fb_and_maybe_soln = task_feedback(solution=solution)
         total_prompt_tokens += fb_and_maybe_soln["prompt_tokens"]
         total_output_tokens += fb_and_maybe_soln["output_tokens"]
+
+        entropy = fb_and_maybe_soln["entropy"]
         
         item = {
             "attempt": n_attempts, 
@@ -49,10 +51,10 @@ def iterative_gsm(question: str, max_attempts: int, feedback_type: str, temperat
             "solution_fixed": fb_and_maybe_soln["solution"], 
             "feedback": fb_and_maybe_soln["feedback"], 
             "total_prompt_tokens_at_attempt": total_prompt_tokens,
-            "total_output_tokens_at_attempt": total_output_tokens
+            "total_output_tokens_at_attempt": total_output_tokens,
+            "entropy": entropy,
         }
         log.append(item)
-        # print(item)
 
         if "it is correct" in fb_and_maybe_soln["feedback"].lower():
             break
@@ -126,16 +128,17 @@ if __name__ == "__main__":
 
     if len(sys.argv) == 2 and sys.argv[1] == "test":
         test()
-    else:
-        import argparse
-        args = argparse.ArgumentParser()
-        args.add_argument("--gsm_task_file", type=str, default="data/tasks/gsm/gsm.jsonl")
-        args.add_argument("--max_attempts", type=int, default=4)
-        args.add_argument("--outfile", type=str, default="data/tasks/gsm/gsm_outputs.jsonl")
-        args.add_argument("--feedback_type", type=str, default="rich")
-        args.add_argument("--temperature", type=float, default=0.0)
-        args.add_argument("--num_questions", type=int, default=None)
-        args = args.parse_args()
-        new_out_file = args.outfile
-        args.outfile = f"{args.outfile}.fb_{args.feedback_type}.temp_{args.temperature}.engine_{ENGINE}.jsonl"
-        fix_gsm(gsm_task_file=args.gsm_task_file, max_attempts=args.max_attempts, outfile=args.outfile, new_out_file=new_out_file, feedback_type=args.feedback_type, temperature=args.temperature, num_questions=args.num_questions)
+        exit(0)
+    
+    import argparse
+    args = argparse.ArgumentParser()
+    args.add_argument("--gsm_task_file", type=str, default="data/tasks/gsm/gsm.jsonl")
+    args.add_argument("--max_attempts", type=int, default=4)
+    args.add_argument("--outfile", type=str, default="data/tasks/gsm/gsm_outputs.jsonl")
+    args.add_argument("--feedback_type", type=str, default="rich")
+    args.add_argument("--temperature", type=float, default=0.0)
+    args.add_argument("--num_questions", type=int, default=None)
+    args = args.parse_args()
+    new_out_file = args.outfile
+    args.outfile = f"{args.outfile}.fb_{args.feedback_type}.temp_{args.temperature}.engine_{ENGINE}.jsonl"
+    fix_gsm(gsm_task_file=args.gsm_task_file, max_attempts=args.max_attempts, outfile=args.outfile, new_out_file=new_out_file, feedback_type=args.feedback_type, temperature=args.temperature, num_questions=args.num_questions)

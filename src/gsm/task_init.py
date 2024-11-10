@@ -4,7 +4,7 @@ from src.utils import Prompt
 from prompt_lib.backends import openai_api
 
 import sglang as sgl
-
+from src.entropy import length_normalized_entropy
 
 from transformers import AutoTokenizer
 tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3.1-8B-Instruct")
