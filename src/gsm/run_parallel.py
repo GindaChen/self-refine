@@ -31,9 +31,12 @@ def iterative_gsm(question: str, max_attempts: int, feedback_type: str, temperat
     n_attempts = 0
     log = []
 
-    total_prompt_tokens = 0
-    total_output_tokens = 0
-    while n_attempts < max_attempts:
+    
+    # while n_attempts < max_attempts:
+    for n_attempts in range(max_attempts):
+        total_prompt_tokens = 0
+        total_output_tokens = 0
+
         if n_attempts == 0:
             solution, init_tokens = task_init(solution=question)
             total_prompt_tokens += init_tokens["prompt_tokens"]
@@ -60,7 +63,7 @@ def iterative_gsm(question: str, max_attempts: int, feedback_type: str, temperat
             break
 
         solution = fb_and_maybe_soln["solution"]
-        n_attempts += 1
+        # n_attempts += 1
 
     # print(f"iterative_gsm {question} {max_attempts} {feedback_type} {temperature} done")
     return log

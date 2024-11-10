@@ -75,15 +75,29 @@ def evaluate_code_prompt(path, output_path, num_gsm: int = 1319, n_attempts: int
         for iter_idx, soln in enumerate(solutions):
             soln = soln.split("\n\n\n")[0].strip() + "\n"
             soln = soln.replace("The answer is", "").strip() + "\n"
-            os.system("rm -rf __pycache__")
-            os.system("rm -f temp_result.pyc")
+            # os.system("rm -rf __pycache__")
+            # os.system("rm -f temp_result.pyc")
 
             with open("temp_result.py", "w+") as f:
                 f.write(soln)
             try:
                 with timeout(3):
-                    import temp_result
-                    reload(temp_result)
+                    import importlib.util
+                    import pathlib
+                    
+                    # Remove the module from sys.modules if it exists
+                    if 'temp_result' in sys.modules:
+                        del sys.modules['temp_result']
+                    
+                    # Force load from .py file
+                    spec = importlib.util.spec_from_file_location("temp_result", "temp_result.py")
+                    temp_result = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(temp_result)
+
+                    # import temp_result
+                    # temp_result.__file__ = "temp_result.py"
+                    # reload(temp_result)
+
                     correct_solution = str(row["answer"])
                     exec(soln)
                     result = str(temp_result.solution())
@@ -119,8 +133,14 @@ def evaluate_code_prompt(path, output_path, num_gsm: int = 1319, n_attempts: int
         attempt_to_acc.append(attempt_to_acc_)
 
     total_prompt_tokens_df = pd.DataFrame(total_prompt_tokens)
+    total_prompt_tokens_per_iter = total_prompt_tokens_df.sum(axis=0).apply(int).tolist()
+    
     total_output_tokens_df = pd.DataFrame(total_output_tokens)
-    breakpoint()
+    total_output_tokens_per_iter = total_output_tokens_df.sum(axis=0).apply(int).tolist()
+
+    import numpy as np
+    total_tokens_per_iter = [p + o for (p, o) in zip(total_prompt_tokens_per_iter, total_output_tokens_per_iter)]
+    total_tokens_per_iter_cumsum = np.cumsum(total_tokens_per_iter).tolist()
     
     df = pd.DataFrame(attempt_to_acc)
     df.to_json(output_path, orient="records", lines=True)
@@ -129,12 +149,22 @@ def evaluate_code_prompt(path, output_path, num_gsm: int = 1319, n_attempts: int
     report_file = f"{output_path}.reports.txt"
     print_reports(reports, report_file, df, num_gsm, n_attempts)  # Step 4
 
-    # data = {
-    #     'Attempt': list(range(max_iterations)),
-    #     'Prompt Tokens': prompt_tokens,
-    #     'Output Tokens': output_tokens,
-    #     'Total Tokens': [p + o for (p, o) in zip(prompt_tokens, output_tokens)]
-    # }
+    
+    data = {
+        'Attempt': list(range(n_attempts)),
+        'Prompt Tokens': total_prompt_tokens_per_iter,
+        'Output Tokens': total_output_tokens_per_iter,
+        'Total Tokens': total_tokens_per_iter,
+        'Cumulative Total Tokens': total_tokens_per_iter_cumsum,
+        'Accuracy': [df[i].sum() / num_gsm for i in range(n_attempts)],
+        'Correct Questions': [df[i].sum() for i in range(n_attempts)],
+        'Total Questions': [num_gsm for i in range(n_attempts)]
+    }
+
+    breakpoint()
+    stat_df = pd.DataFrame(data)
+    print(stat_df.to_markdown())
+    stat_df.to_csv(f"{output_path}.stats.csv")
 
     # print(attempt_to_acc)
     for i in range(n_attempts):

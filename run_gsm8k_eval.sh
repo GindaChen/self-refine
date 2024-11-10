@@ -20,6 +20,7 @@ done
 
 set -xe
 python -u src/gsm/gsm_selfref_eval.py \
+--n_attempts $MAX_ATTEMPTS \
 --path $OUTFILE \
 --output_path $EVALFILE \
 --num_gsm $NUM_QUESTIONS \
