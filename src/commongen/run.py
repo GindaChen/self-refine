@@ -114,6 +114,7 @@ def run_iter(inputs_file_path: str, max_attempts: int = 4):
 
     test_df.to_json(output_path, orient="records", lines=True)
 
+import threading
 
 def run_multi_sample(inputs_file_path: str, n_samples: int = 4):
     test_df = pd.read_json(inputs_file_path, lines=True, orient="records")

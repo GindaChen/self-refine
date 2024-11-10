@@ -1,8 +1,11 @@
+import sglang as sgl
 import pandas as pd
 from prompt_lib.backends import openai_api
 
 from src.utils import Prompt
 
+from transformers import AutoTokenizer
+tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3.1-8B-Instruct")
 
 class GSMFeedback(Prompt):
     def __init__(self, engine: str, prompt_examples: str, temperature: float, max_tokens: int = 600) -> None:
@@ -23,21 +26,37 @@ class GSMFeedback(Prompt):
         with open(examples_path, "r") as f:
             self.prompt = f.read()
     
-    def __call__(self, solution: str):
+    def __call__(self, f, solution: str):
         generation_query = self.make_query(solution=solution)
-        print(generation_query)
+        # print(generation_query)
+        prompt_tokens = len(tokenizer.encode(generation_query))
+
         # print(1/0)
-        output = openai_api.OpenaiAPIWrapper.call(
-            prompt=generation_query,
-            engine=self.engine,
+        # output = openai_api.OpenaiAPIWrapper.call(
+        #     prompt=generation_query,
+        #     engine=self.engine,
+        #     max_tokens=self.max_tokens,
+        #     stop_token="### END",
+        #     temperature=self.temperature,
+        # )
+        
+        # entire_output = openai_api.OpenaiAPIWrapper.get_first_response(output)
+
+
+        f += (generation_query + sgl.gen(
+            "feedback",
             max_tokens=self.max_tokens,
-            stop_token="### END",
+            stop=["### END"],
             temperature=self.temperature,
-        )
-        
-        
-        entire_output = openai_api.OpenaiAPIWrapper.get_first_response(output)
-        print(entire_output)
+            return_logprob=True,
+            return_text_in_logprobs=True,
+            top_logprobs_num=2,
+        ))
+
+        entire_output = f.get_var("feedback")
+
+        output_tokens = len(tokenizer.encode(entire_output))
+        # print(entire_output)
         if "### END" in entire_output:
             entire_output = entire_output.split("### END")[0]
 
@@ -45,7 +64,7 @@ class GSMFeedback(Prompt):
         feedback = entire_output.split("def solution():")[0]
         improved_soln = "def solution():" + improved_soln.rstrip()
         self.update_prompt(solution=solution, improved_soln=improved_soln, feedback=feedback)
-        return {"solution": improved_soln, "feedback": feedback}
+        return {"solution": improved_soln, "feedback": feedback, "prompt_tokens": prompt_tokens, "output_tokens": output_tokens}
 
     def make_query(self, solution: str):
         

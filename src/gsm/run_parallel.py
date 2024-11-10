@@ -31,12 +31,26 @@ def iterative_gsm(question: str, max_attempts: int, feedback_type: str, temperat
     n_attempts = 0
     log = []
 
+    total_prompt_tokens = 0
+    total_output_tokens = 0
     while n_attempts < max_attempts:
         if n_attempts == 0:
-            solution = task_init(solution=question)
-        fb_and_maybe_soln = task_feedback(solution=solution)
+            solution, init_tokens = task_init(solution=question)
+            total_prompt_tokens += init_tokens["prompt_tokens"]
+            total_output_tokens += init_tokens["output_tokens"]
         
-        item = {"attempt": n_attempts, "solution_curr": solution, "solution_fixed": fb_and_maybe_soln["solution"], "feedback": fb_and_maybe_soln["feedback"]}
+        fb_and_maybe_soln = task_feedback(solution=solution)
+        total_prompt_tokens += fb_and_maybe_soln["prompt_tokens"]
+        total_output_tokens += fb_and_maybe_soln["output_tokens"]
+        
+        item = {
+            "attempt": n_attempts, 
+            "solution_curr": solution, 
+            "solution_fixed": fb_and_maybe_soln["solution"], 
+            "feedback": fb_and_maybe_soln["feedback"], 
+            "total_prompt_tokens_at_attempt": total_prompt_tokens,
+            "total_output_tokens_at_attempt": total_output_tokens
+        }
         log.append(item)
         # print(item)
 
@@ -50,27 +64,45 @@ def iterative_gsm(question: str, max_attempts: int, feedback_type: str, temperat
     return log
 
 
-def fix_gsm(gsm_task_file: str, max_attempts: int, outfile: str, feedback_type: str, temperature: float):
+def fix_gsm(gsm_task_file: str, max_attempts: int, outfile: str, new_out_file: str, feedback_type: str, temperature: float, num_questions: int = None):
 
 
     slow_programs_df = pd.read_json(gsm_task_file, lines=True, orient="records")
+
+    if num_questions is None:
+        num_questions = len(slow_programs_df)
+
+    slow_programs_df = slow_programs_df.head(num_questions)
+    
     slow_programs_df["run_logs"] = None
+    futures = []
     results = []
-    for i, row in tqdm(slow_programs_df.iterrows(), total=len(slow_programs_df)):
-        row_copy = row.to_dict()
-        try:
-            run_logs = iterative_gsm(question=row["input"], max_attempts=max_attempts, feedback_type=feedback_type, temperature=temperature)
-            row_copy["run_logs"] = run_logs
-            row_copy["generated_answer_ours"] = run_logs[-1]["solution_fixed"]
-            row_copy["generated_answer_direct"] = run_logs[0]["solution_curr"]
-            results.append(row_copy)
-            if i % 10 == 0:
-                pd.DataFrame(results).to_json(outfile + f".{i}.jsonl", orient="records", lines=True)
-        except Exception as e:
-            # raise e
-            pass
-    pd.DataFrame(results).to_json(outfile, orient="records", lines=True)
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=1319) as executor:
+        for i, row in tqdm(slow_programs_df.iterrows(), total=len(slow_programs_df)):
+            future = executor.submit(iterative_gsm, question=row["input"], max_attempts=max_attempts, feedback_type=feedback_type, temperature=temperature)
+            futures.append(future)
+
+        
+        for i, row in tqdm(slow_programs_df.iterrows(), total=len(slow_programs_df)):
+            row_copy = row.to_dict()
+            try:
+                future = futures[i]
+                run_logs = future.result()
+                row_copy["run_logs"] = run_logs
+                row_copy["generated_answer_ours"] = run_logs[-1]["solution_fixed"]
+                row_copy["generated_answer_direct"] = run_logs[0]["solution_curr"]
+                results.append(row_copy)
+                if i % 10 == 0:
+                    pd.DataFrame(results).to_json(outfile + f".{i}.jsonl", orient="records", lines=True)
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                pass
+    
     # breakpoint()
+    pd.DataFrame(results).to_json(outfile, orient="records", lines=True)
+    pd.DataFrame(results).to_json(new_out_file, orient="records", lines=True)
     return results
 
 
@@ -102,6 +134,8 @@ if __name__ == "__main__":
         args.add_argument("--outfile", type=str, default="data/tasks/gsm/gsm_outputs.jsonl")
         args.add_argument("--feedback_type", type=str, default="rich")
         args.add_argument("--temperature", type=float, default=0.0)
+        args.add_argument("--num_questions", type=int, default=None)
         args = args.parse_args()
+        new_out_file = args.outfile
         args.outfile = f"{args.outfile}.fb_{args.feedback_type}.temp_{args.temperature}.engine_{ENGINE}.jsonl"
-        fix_gsm(gsm_task_file=args.gsm_task_file, max_attempts=args.max_attempts, outfile=args.outfile, feedback_type=args.feedback_type, temperature=args.temperature)
+        fix_gsm(gsm_task_file=args.gsm_task_file, max_attempts=args.max_attempts, outfile=args.outfile, new_out_file=new_out_file, feedback_type=args.feedback_type, temperature=args.temperature, num_questions=args.num_questions)

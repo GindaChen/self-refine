@@ -166,6 +166,7 @@ def run_over_titles(titles_file: str, max_attempts: int, outfile: str):
             result_data.to_csv(f, sep=",", index=False)
     except Exception as e:
         breakpoint()
+        import traceback; traceback.print_exc()
     return 
 
 

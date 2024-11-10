@@ -135,12 +135,24 @@ PYTHONPATH="." python -u src/responsegen/run.py --output <OUTPUT FILE> --size <D
 
 - Running:
 ```sh
-PYTHONPATH="." python -u src/readability/readability.py --output <OUTPUT FILE>
+PYTHONPATH="." python -u src/readability/readability.py \
+  --output <OUTPUT FILE>
+
+PYTHONPATH="." python -u src/readability/readability.py \
+  --output code_readability_outputs.jsonl
 ```
 
 - Evaluation:
 ```sh
-PYTHONPATH="." python -u src/readability/{count_comment|count_function|count_meaningful_var}.py --file <INPUT FILE>
+PYTHONPATH="." python -u src/readability/{count_comment|count_function|count_meaningful_var}.py \
+  --file <INPUT FILE>
+  
+PYTHONPATH="." python -u src/readability/count_comment.py \
+  --file code_readability_outputs.jsonl
+PYTHONPATH="." python -u src/readability/count_function.py \
+  --file code_readability_outputs.jsonl
+PYTHONPATH="." python -u src/readability/count_meaningful_var.py \
+  --file code_readability_outputs.jsonl
 ```
 
 
