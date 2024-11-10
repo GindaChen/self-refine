@@ -149,7 +149,6 @@ def evaluate_code_prompt(path, output_path, num_gsm: int = 1319, n_attempts: int
     report_file = f"{output_path}.reports.txt"
     print_reports(reports, report_file, df, num_gsm, n_attempts)  # Step 4
 
-    
     data = {
         'Attempt': list(range(n_attempts)),
         'Prompt Tokens': total_prompt_tokens_per_iter,
@@ -161,14 +160,14 @@ def evaluate_code_prompt(path, output_path, num_gsm: int = 1319, n_attempts: int
         'Total Questions': [num_gsm for i in range(n_attempts)]
     }
 
-    breakpoint()
     stat_df = pd.DataFrame(data)
     print(stat_df.to_markdown())
+    print(stat_df.to_csv(sep='\t', index=False))
     stat_df.to_csv(f"{output_path}.stats.csv")
 
-    # print(attempt_to_acc)
-    for i in range(n_attempts):
-        print(f"Accuracy at attempt {i} = {df[i].sum() / num_gsm:.2%} ({df[i].sum()}/{num_gsm})")
+    # # print(attempt_to_acc)
+    # for i in range(n_attempts):
+    #     print(f"Accuracy at attempt {i} = {df[i].sum() / num_gsm:.2%} ({df[i].sum()}/{num_gsm})")
 
     return reports
 
