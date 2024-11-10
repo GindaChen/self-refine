@@ -133,3 +133,13 @@ dmypy.json
 # Pyre type checker
 .pyre/
 out-responsegen.json
+
+
+gsm8k_outputs*.jsonl
+gsm8k_outputs*.csv
+gsm8k_outputs*.txt
+
+prompt_lib
+temp_result.py
+tmp
+env
