@@ -31,7 +31,27 @@ class GSMInit(Prompt):
         query = f"{self.prompt}{self.question_prefix}{solution}{self.intra_example_sep}{self.answer_prefix}"
         return query
 
-    def __call__(self, f, solution: str) -> str:
+    def call_sglang(self, f, solution: str) -> str:
+        generation_query = self.make_query(solution)
+        prompt_tokens = len(tokenizer.encode(generation_query))
+        
+        f += (
+            generation_query + sgl.gen(
+                "answer",
+                max_tokens=300,
+                stop=[self.inter_example_sep],
+                temperature=self.temperature,
+                return_logprob=True,
+                return_text_in_logprobs=True,
+                top_logprobs_num=2,
+            )
+        )
+
+        solution_code = f.get_var("answer")
+        output_tokens = len(tokenizer.encode(solution_code))
+        return solution_code.strip(), {"prompt_tokens": prompt_tokens, "output_tokens": output_tokens}
+    
+    def __call__(self, solution: str) -> str:
         generation_query = self.make_query(solution)
         prompt_tokens = len(tokenizer.encode(generation_query))
         output = openai_api.OpenaiAPIWrapper.call(
@@ -41,24 +61,9 @@ class GSMInit(Prompt):
             stop_token=self.inter_example_sep,
             temperature=self.temperature,
         )
-        
-        # f += (
-        #     generation_query + sgl.gen(
-        #         "answer",
-        #         max_tokens=300,
-        #         stop=[self.inter_example_sep],
-        #         temperature=self.temperature,
-        #         return_logprob=True,
-        #         return_text_in_logprobs=True,
-        #         top_logprobs_num=2,
-        #     )
-        # )
-
-        solution_code = f.get_var("answer")
-        # solution_code = openai_api.OpenaiAPIWrapper.get_first_response(output)
+        solution_code = openai_api.OpenaiAPIWrapper.get_first_response(output)
         output_tokens = len(tokenizer.encode(solution_code))
         
-
         return solution_code.strip(), {"prompt_tokens": prompt_tokens, "output_tokens": output_tokens}
 
 

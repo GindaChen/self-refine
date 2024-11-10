@@ -14,7 +14,7 @@ ENGINE = CODEX
 
 
 @retry_parse_fail_prone_cmd
-def iterative_gsm(question: str, max_attempts: int, feedback_type: str, temperature: float):
+def iterative_gsm(question: str, max_attempts: int, feedback_type: str, temperature: float, entropy_cutoff: float):
     # print(f"iterative_gsm {question} {max_attempts} {feedback_type} {temperature}")
 
     # initialize all the required components
@@ -43,7 +43,7 @@ def iterative_gsm(question: str, max_attempts: int, feedback_type: str, temperat
         total_prompt_tokens += fb_and_maybe_soln["prompt_tokens"]
         total_output_tokens += fb_and_maybe_soln["output_tokens"]
 
-        entropy = fb_and_maybe_soln["entropy"]
+        # entropy = fb_and_maybe_soln["entropy"]
         
         item = {
             "attempt": n_attempts, 
@@ -52,7 +52,7 @@ def iterative_gsm(question: str, max_attempts: int, feedback_type: str, temperat
             "feedback": fb_and_maybe_soln["feedback"], 
             "total_prompt_tokens_at_attempt": total_prompt_tokens,
             "total_output_tokens_at_attempt": total_output_tokens,
-            "entropy": entropy,
+            # "entropy": entropy,
         }
         log.append(item)
 
@@ -66,7 +66,7 @@ def iterative_gsm(question: str, max_attempts: int, feedback_type: str, temperat
     return log
 
 
-def fix_gsm(gsm_task_file: str, max_attempts: int, outfile: str, new_out_file: str, feedback_type: str, temperature: float, num_questions: int = None):
+def fix_gsm(gsm_task_file: str, max_attempts: int, outfile: str, new_out_file: str, feedback_type: str, temperature: float, num_questions: int = None, entropy_cutoff:float = 0):
 
 
     slow_programs_df = pd.read_json(gsm_task_file, lines=True, orient="records")
@@ -82,7 +82,7 @@ def fix_gsm(gsm_task_file: str, max_attempts: int, outfile: str, new_out_file: s
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=1319) as executor:
         for i, row in tqdm(slow_programs_df.iterrows(), total=len(slow_programs_df)):
-            future = executor.submit(iterative_gsm, question=row["input"], max_attempts=max_attempts, feedback_type=feedback_type, temperature=temperature)
+            future = executor.submit(iterative_gsm, question=row["input"], max_attempts=max_attempts, feedback_type=feedback_type, temperature=temperature, entropy_cutoff=entropy_cutoff)
             futures.append(future)
 
         
@@ -95,8 +95,8 @@ def fix_gsm(gsm_task_file: str, max_attempts: int, outfile: str, new_out_file: s
                 row_copy["generated_answer_ours"] = run_logs[-1]["solution_fixed"]
                 row_copy["generated_answer_direct"] = run_logs[0]["solution_curr"]
                 results.append(row_copy)
-                if i % 10 == 0:
-                    pd.DataFrame(results).to_json(outfile + f".{i}.jsonl", orient="records", lines=True)
+                # if i % 10 == 0:
+                #     pd.DataFrame(results).to_json(outfile + f".{i}.jsonl", orient="records", lines=True)
             except Exception as e:
                 import traceback
                 traceback.print_exc()
@@ -138,7 +138,12 @@ if __name__ == "__main__":
     args.add_argument("--feedback_type", type=str, default="rich")
     args.add_argument("--temperature", type=float, default=0.0)
     args.add_argument("--num_questions", type=int, default=None)
+    args.add_argument("--entropy_cutoff", type=float, default=0)
     args = args.parse_args()
     new_out_file = args.outfile
     args.outfile = f"{args.outfile}.fb_{args.feedback_type}.temp_{args.temperature}.engine_{ENGINE}.jsonl"
-    fix_gsm(gsm_task_file=args.gsm_task_file, max_attempts=args.max_attempts, outfile=args.outfile, new_out_file=new_out_file, feedback_type=args.feedback_type, temperature=args.temperature, num_questions=args.num_questions)
+    fix_gsm(
+        gsm_task_file=args.gsm_task_file, max_attempts=args.max_attempts, outfile=args.outfile, new_out_file=new_out_file, 
+        feedback_type=args.feedback_type, temperature=args.temperature, num_questions=args.num_questions, 
+        entropy_cutoff=args.entropy_cutoff,
+    )

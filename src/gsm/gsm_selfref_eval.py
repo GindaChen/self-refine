@@ -33,7 +33,7 @@ def read_json(path):
     task_df = pd.DataFrame(rows)
     return task_df
 
-def evaluate_code_prompt(path, output_path, num_gsm: int = 1319, n_attempts: int = 5):
+def evaluate_code_prompt(path, output_path, num_gsm: int = 1319, n_attempts: int = 5, entropy_cutoff: float = 0):
     data = read_json(path)
     if "question" not in data.columns:
         data["question"] = data["input"]
@@ -42,7 +42,7 @@ def evaluate_code_prompt(path, output_path, num_gsm: int = 1319, n_attempts: int
 
     attempt_to_acc = []
     reports = []  # Step 1
-    for idx, row in tqdm(data.iterrows(), total=len(data)):
+    for idx, row in tqdm(data.iterrows(), total=len(data), desc="Evaluate GSM8k"):
         # if idx < 20:
         #     continue
         # if idx > 10:
@@ -54,6 +54,11 @@ def evaluate_code_prompt(path, output_path, num_gsm: int = 1319, n_attempts: int
             continue
         for _, log in enumerate(row["run_logs"]):
             solutions.append(log["solution_curr"])
+            if 'entropy' in log:
+                entropy = log['entropy']
+                if entropy < entropy_cutoff:
+                    break
+            
         solutions.append(row["run_logs"][-1]["solution_fixed"])
         
         feedback = [rec["feedback"] for rec in row["run_logs"]]
@@ -67,10 +72,7 @@ def evaluate_code_prompt(path, output_path, num_gsm: int = 1319, n_attempts: int
 
             with open("temp_result.py", "w+") as f:
                 f.write(soln)
-
-            # breakpoint()
             try:
-                # breakpoint()
                 with timeout(3):
                     import temp_result
                     reload(temp_result)
@@ -155,6 +157,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_gsm", type=int, default=1319)
     parser.add_argument("--n_attempts", type=int, default=5)
     parser.add_argument("--output_path", type=str, default="data/quco/quco_test.jsonl")
+    parser.add_argument("--entropy_cutoff", type=float, default=0)
     args = parser.parse_args()
     
-    evaluate_code_prompt(args.path, args.output_path, args.num_gsm, args.n_attempts)
+    evaluate_code_prompt(args.path, args.output_path, args.num_gsm, args.n_attempts, args.entropy_cutoff)

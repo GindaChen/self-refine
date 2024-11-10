@@ -41,7 +41,10 @@ class GSMFeedback(Prompt):
             top_logprobs_num=2,
         ))
 
-        entire_output = f.get_var("feedback")
+        entire_output = f.get_var("feedback")        
+        meta = f.get_meta_info("feedback")
+        logprobs = [x for x, _, _ in meta["output_token_logprobs"]]
+        entropy = length_normalized_entropy(logprobs)
         output_tokens = len(tokenizer.encode(entire_output))
         
         if "### END" in entire_output:
@@ -52,9 +55,9 @@ class GSMFeedback(Prompt):
         improved_soln = "def solution():" + improved_soln.rstrip()
         self.update_prompt(solution=solution, improved_soln=improved_soln, feedback=feedback)
         
-        return {"solution": improved_soln, "feedback": feedback, "prompt_tokens": prompt_tokens, "output_tokens": output_tokens}
+        return {"solution": improved_soln, "feedback": feedback, "prompt_tokens": prompt_tokens, "output_tokens": output_tokens, "entropy": entropy}
     
-    def __call__(self, f, solution: str):
+    def __call__(self, solution: str):
         generation_query = self.make_query(solution=solution)
         prompt_num_tokens = len(tokenizer.encode(generation_query))
 
