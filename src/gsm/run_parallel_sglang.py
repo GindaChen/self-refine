@@ -36,14 +36,15 @@ def iterative_gsm(s, question: str, max_attempts: int, feedback_type: str, tempe
     n_attempts = 0
     log = []
 
-    total_prompt_tokens = 0
-    total_output_tokens = 0
+    
     while n_attempts < max_attempts:
+        total_prompt_tokens = 0
+        total_output_tokens = 0
         if n_attempts == 0:
             f = s.fork(1)[0]
             solution, init_tokens = task_init.call_sglang(f, solution=question)
-            total_prompt_tokens += init_tokens["prompt_tokens"]
-            total_output_tokens += init_tokens["output_tokens"]
+            total_prompt_tokens = init_tokens["prompt_tokens"]
+            total_output_tokens = init_tokens["output_tokens"]
         
         f = s.fork(1)[0]
         fb_and_maybe_soln = task_feedback.call_sglang(f, solution=solution)

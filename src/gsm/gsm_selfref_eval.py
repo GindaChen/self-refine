@@ -41,6 +41,9 @@ def evaluate_code_prompt(path, output_path, num_gsm: int = 1319, n_attempts: int
         data["answer"] = data["target"]
 
     attempt_to_acc = []
+    total_prompt_tokens = []
+    total_output_tokens = []
+
     reports = []  # Step 1
     for idx, row in tqdm(data.iterrows(), total=len(data), desc="Evaluate GSM8k"):
         # if idx < 20:
@@ -62,6 +65,11 @@ def evaluate_code_prompt(path, output_path, num_gsm: int = 1319, n_attempts: int
         solutions.append(row["run_logs"][-1]["solution_fixed"])
         
         feedback = [rec["feedback"] for rec in row["run_logs"]]
+        prompt_tokens = [rec["total_prompt_tokens_at_attempt"] for rec in row["run_logs"]]
+        output_tokens = [rec["total_output_tokens_at_attempt"] for rec in row["run_logs"]]
+        total_prompt_tokens.append(prompt_tokens)
+        total_output_tokens.append(output_tokens)
+
 
         prev_accuracy = 0
         for iter_idx, soln in enumerate(solutions):
@@ -98,6 +106,9 @@ def evaluate_code_prompt(path, output_path, num_gsm: int = 1319, n_attempts: int
                     break
                 attempt_to_acc_[iter_idx] = 0
                 prev_accuracy = is_corr
+
+                # total_prompt_tokens.append(row["total_prompt_tokens_at_attempt"])
+                # total_output_tokens.append(row["total_output_tokens_at_attempt"])
             except Exception as e:
                 import traceback
                 traceback.print_exc()
@@ -107,12 +118,23 @@ def evaluate_code_prompt(path, output_path, num_gsm: int = 1319, n_attempts: int
 
         attempt_to_acc.append(attempt_to_acc_)
 
+    total_prompt_tokens_df = pd.DataFrame(total_prompt_tokens)
+    total_output_tokens_df = pd.DataFrame(total_output_tokens)
+    breakpoint()
+    
     df = pd.DataFrame(attempt_to_acc)
     df.to_json(output_path, orient="records", lines=True)
     # breakpoint()
 
     report_file = f"{output_path}.reports.txt"
     print_reports(reports, report_file, df, num_gsm, n_attempts)  # Step 4
+
+    # data = {
+    #     'Attempt': list(range(max_iterations)),
+    #     'Prompt Tokens': prompt_tokens,
+    #     'Output Tokens': output_tokens,
+    #     'Total Tokens': [p + o for (p, o) in zip(prompt_tokens, output_tokens)]
+    # }
 
     # print(attempt_to_acc)
     for i in range(n_attempts):
