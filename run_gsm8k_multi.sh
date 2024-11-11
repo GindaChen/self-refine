@@ -40,7 +40,7 @@ NUM_QUESTIONS=1319
 
 
 start_run_id=0
-end_run_id=6
+end_run_id=9
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in
@@ -54,22 +54,23 @@ done
 
 # for entropy_cutoff in $(seq -1 0.1 0.05); do
 for run_id in $(seq $start_run_id $end_run_id); do    
-    for entropy_cutoff in -1 0.05 0.1; do
+    for entropy_cutoff in 0.05; do
         echo "Running run $run_id with entropy cutoff $entropy_cutoff"
         OUTFILE=gsm8k_outputs.r${run_id}.e${entropy_cutoff}.jsonl
         EVALFILE=gsm8k_outputs.r${run_id}.e${entropy_cutoff}.eval.jsonl
 
-        python -u src/gsm/run_parallel_sglang.py  \
-        --max_attempts $MAX_ATTEMPTS \
-        --outfile $OUTFILE \
-        --num_questions $NUM_QUESTIONS
+        # python -u src/gsm/run_parallel.py  \
+        # --max_attempts $MAX_ATTEMPTS \
+        # --outfile $OUTFILE \
+        # --num_questions $NUM_QUESTIONS
 
         python -u src/gsm/gsm_selfref_eval.py \
         --n_attempts $MAX_ATTEMPTS \
         --path $OUTFILE \
         --output_path $EVALFILE \
         --num_gsm $NUM_QUESTIONS \
-        --entropy_cutoff $entropy_cutoff
+        --entropy_cutoff $entropy_cutoff &
     done
 done
 
+wait

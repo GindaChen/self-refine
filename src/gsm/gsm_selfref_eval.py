@@ -56,20 +56,27 @@ def evaluate_code_prompt(path, output_path, num_gsm: int = 1319, n_attempts: int
         attempt_to_acc_ = {i: 0 for i in range(n_attempts)}
         attempt_to_acc_["question"] = row["question"]
         solutions = []
+        feedback = []
+        prompt_tokens = []
+        output_tokens = []
         if row["run_logs"] is None:
             continue
-        for _, log in enumerate(row["run_logs"]):
-            solutions.append(log["solution_curr"])
+        for i, log in enumerate(row["run_logs"]):
+            prompt_tokens.append(log["total_prompt_tokens_at_attempt"])
+            output_tokens.append(log["total_output_tokens_at_attempt"])
             if 'entropy' in log:
                 entropy = log['entropy']
                 if entropy < entropy_cutoff:
                     break
+            solutions.append(log["solution_curr"])
+            feedback.append(log["feedback"])
+            
             
         solutions.append(row["run_logs"][-1]["solution_fixed"])
         
-        feedback = [rec["feedback"] for rec in row["run_logs"]]
-        prompt_tokens = [rec["total_prompt_tokens_at_attempt"] for rec in row["run_logs"]]
-        output_tokens = [rec["total_output_tokens_at_attempt"] for rec in row["run_logs"]]
+        # feedback = [rec["feedback"] for rec in row["run_logs"]]
+        # prompt_tokens = [rec["total_prompt_tokens_at_attempt"] for i, rec in row["run_logs"]]
+        # output_tokens = [rec["total_output_tokens_at_attempt"] for rec in row["run_logs"]]
         total_prompt_tokens.append(prompt_tokens)
         total_output_tokens.append(output_tokens)
 
