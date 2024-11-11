@@ -44,6 +44,9 @@ def evaluate_code_prompt(path, output_path, num_gsm: int = 1319, n_attempts: int
     total_prompt_tokens = []
     total_output_tokens = []
 
+    import random
+    random_int = random.randint(10, 1000000)
+
     reports = []  # Step 1
     for idx, row in tqdm(data.iterrows(), total=len(data), desc="Evaluate GSM8k"):
         # if idx < 20:
@@ -72,13 +75,15 @@ def evaluate_code_prompt(path, output_path, num_gsm: int = 1319, n_attempts: int
 
 
         prev_accuracy = 0
+        temp_result_mod = f"temp_result_{random_int}"
+        temp_result_file = f"{temp_result_mod}.py"
         for iter_idx, soln in enumerate(solutions):
             soln = soln.split("\n\n\n")[0].strip() + "\n"
             soln = soln.replace("The answer is", "").strip() + "\n"
             # os.system("rm -rf __pycache__")
             # os.system("rm -f temp_result.pyc")
 
-            with open("temp_result.py", "w+") as f:
+            with open(temp_result_file, "w+") as f:
                 f.write(soln)
             try:
                 with timeout(3):
@@ -86,11 +91,12 @@ def evaluate_code_prompt(path, output_path, num_gsm: int = 1319, n_attempts: int
                     import pathlib
                     
                     # Remove the module from sys.modules if it exists
-                    if 'temp_result' in sys.modules:
-                        del sys.modules['temp_result']
+                    
+                    if temp_result_mod in sys.modules:
+                        del sys.modules[temp_result_mod]
                     
                     # Force load from .py file
-                    spec = importlib.util.spec_from_file_location("temp_result", "temp_result.py")
+                    spec = importlib.util.spec_from_file_location(temp_result_mod, temp_result_file)
                     temp_result = importlib.util.module_from_spec(spec)
                     spec.loader.exec_module(temp_result)
 
@@ -124,8 +130,8 @@ def evaluate_code_prompt(path, output_path, num_gsm: int = 1319, n_attempts: int
                 # total_prompt_tokens.append(row["total_prompt_tokens_at_attempt"])
                 # total_output_tokens.append(row["total_output_tokens_at_attempt"])
             except Exception as e:
-                import traceback
-                traceback.print_exc()
+                # import traceback
+                # traceback.print_exc()
                 # print("Error while executin code:")
                 # print(soln)
                 continue

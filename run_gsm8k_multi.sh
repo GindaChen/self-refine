@@ -38,8 +38,23 @@
 MAX_ATTEMPTS=6
 NUM_QUESTIONS=1319
 
-for run_id in $(seq 0 $((RUNS))); do
-    for entropy_cutoff in $(seq -1 0.1 0.05); do
+
+start_run_id=0
+end_run_id=6
+
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --start_run_id) start_run_id="$2"; shift ;;
+        --end_run_id) end_run_id="$2"; shift ;;
+        *) echo "Unknown parameter passed: $1"; exit 1 ;;
+    esac
+    shift
+done
+
+
+# for entropy_cutoff in $(seq -1 0.1 0.05); do
+for run_id in $(seq $start_run_id $end_run_id); do    
+    for entropy_cutoff in -1 0.05 0.1; do
         echo "Running run $run_id with entropy cutoff $entropy_cutoff"
         OUTFILE=gsm8k_outputs.r${run_id}.e${entropy_cutoff}.jsonl
         EVALFILE=gsm8k_outputs.r${run_id}.e${entropy_cutoff}.eval.jsonl
